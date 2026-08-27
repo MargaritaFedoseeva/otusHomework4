@@ -1,0 +1,62 @@
+---
+
+- name: Create Namespace for WireMock in Minikube
+  kubernetes.core.k8s:
+    name: "{{ wiremock_namespace }}"
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig_path }}"
+
+- name: Add repo WireMock Helm
+  kubernetes.core.helm_repository:
+    name: wiremock
+    repo_url: "https://wiremock.github.io/helm-charts"
+    kubeconfig: "{{ kubeconfig_path }}"
+  environment:
+    HTTPS_PROXY: "{{ proxy_url }}"
+    HTTP_PROXY: "{{ proxy_url }}"
+    NO_PROXY: "localhost,127.0.0.1,192.168.49.0/24"
+
+- name: Read stub files
+  set_fact:
+    wiremock_stubs: "{{ wiremock_stubs | default({}) | combine({item | basename: lookup('file', item)}) }}"
+  with_fileglob: "files/mappings/*.json"
+
+- name: Create ConfigMap with all stubs files
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: wiremock-stubs-cm
+        namespace: "{{ wiremock_namespace }}"
+      data: "{{ wiremock_stubs }}"
+
+- name: Install or update WireMock via Helm
+  kubernetes.core.helm:
+    kubeconfig: "{{ kubeconfig_path }}"
+    name: "{{ wiremock_release_name }}"
+    chart_ref: wiremock/wiremock
+    chart_version: "{{ wiremock_chart_version }}"
+    release_namespace: "{{ wiremock_namespace }}"
+    create_namespace: true
+    wait: true
+    values:
+      replicaCount: 1
+      ingress:
+        enabled: true
+        hosts:
+          - host: wiremock.local
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+      args:
+        - "--port=9021"
+        - "--root-dir=/home/wiremock/storage"
+        - "--global-response-templating"
+      mappings: "{{ wiremock_stubs }}"
+  environment:
+    HTTPS_PROXY: "{{ proxy_url }}"
+    HTTP_PROXY: "{{ proxy_url }}"
+    NO_PROXY: "localhost,127.0.0.1,192.168.49.0/24"

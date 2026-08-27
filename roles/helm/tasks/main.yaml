@@ -1,0 +1,18 @@
+---
+
+- name: Download Helm
+  get_url:
+    url: "{{ helm_script_url }}"
+    dest: "{{ tmp_dir }}/get_helm.sh"
+    mode: '0700'
+
+- name: Instal Helm (./get_helm.sh)
+  command:
+    cmd: "{{ tmp_dir }}/get_helm.sh"
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Remove tmp file script Helm
+  file:
+    path: "{{ tmp_dir }}/get_helm.sh"
+    state: absent

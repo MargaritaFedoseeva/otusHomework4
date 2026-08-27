@@ -1,0 +1,6 @@
+---
+
+wiremock_namespace: "wiremock-ns"
+wiremock_release_name: "wiremock"
+wiremock_chart_version: "1.11.0"
+kubeconfig_path: "/home/margo/.kube/config"

@@ -1,0 +1,15 @@
+---
+
+- name: Common dependencies
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - python3-yaml
+      - python3-pip
+      - python3-kubernetes
+    state: present
+    update_cache: yes

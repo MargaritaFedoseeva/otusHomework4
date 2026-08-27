@@ -1,0 +1,23 @@
+---
+
+- name: Download Minikube binary
+  get_url:
+    url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+    dest: /usr/local/bin/minikube
+    mode: '0755'
+
+- name: Start Minikube cluster
+  command: minikube start --driver=docker --ports=80:80 --ports=443:443
+  become: false
+  register: minikube_start
+  changed_when: minikube_start.rc == 0
+
+- name: Enable ingress addon
+  command: minikube addons enable ingress
+  become: false
+  register: minikube_ingress
+  changed_when: minikube_ingress.rc == 0
+
+- name: Wait for ingress-nginx controller to be ready
+  command: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
+  become: false

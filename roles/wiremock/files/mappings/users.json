@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPattern": "/api/v1/user/get/all"
+  },
+  "response": {
+    "status": 200,
+    "body": "{\n  \"name\": \"Test user\",\n  \"course\": \"QA\",\n  \"email\": \"test@test.test\",\n  \"age\": 23\n}",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

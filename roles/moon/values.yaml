@@ -1,0 +1,31 @@
+# Default values for Aerokube Moon
+ingress:
+  enabled: true
+  host: "{{ moon_host }}"
+
+moonUI:
+  enabled: true
+
+browsers:
+  default:
+    selenium:
+      MicrosoftEdge:
+        repository: quay.io/browser/microsoft-edge-stable
+        default: 146.0.3856.97
+      chrome:
+        repository: quay.io/browser/google-chrome-stable
+        default: 146.0.7680.177
+      firefox:
+        repository: quay.io/browser/firefox-mozilla-build
+        default: 149.0.0
+    playwright:
+      chrome:
+        repository: quay.io/browser/playwright-chrome
+      chromium:
+        repository: quay.io/browser/playwright-chromium
+      edge:
+        repository: quay.io/browser/playwright-edge
+      firefox:
+        repository: quay.io/browser/playwright-firefox
+      webkit:
+        repository: quay.io/browser/playwright-webkit

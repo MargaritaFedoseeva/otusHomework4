@@ -1,0 +1,19 @@
+---
+- name: "Install helm"
+  hosts: home_lab
+  remote_user: margo
+  become: true
+  vars_files:
+    - roles/common/vars/main.yaml
+  roles:
+    - role: common
+    - role: proxy
+      tags: always
+    - role: helm
+    - role: docker
+    - role: kubectl
+    - role: minikube
+    - role: moon
+      tags: moon
+    - role: wiremock
+      tags: wiremock
