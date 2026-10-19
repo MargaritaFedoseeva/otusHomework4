@@ -1,0 +1,18 @@
+---
+
+android_namespace: "android-ns"
+kubeconfig_path: "/home/margo/.kube/config"
+
+android_containers:
+  - name: android-1
+    image: budtmo/docker-android:emulator_12.0_v3.6.0-p0
+    cpu_request: "1"
+    cpu_limit: "2"
+    memory_request: "2Gi"
+    memory_limit: "4Gi"
+# - name: android-2
+#   image: budtmo/docker-android:emulator_11.0_v3.6.0-p0
+#   cpu_request: "1"
+#   cpu_limit: "2"
+#   memory_request: "2Gi"
+#   memory_limit: "4Gi"

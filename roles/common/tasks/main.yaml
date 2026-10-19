@@ -1,5 +1,10 @@
 ---
 
+- name: Fix broken packages
+  apt:
+    state: fixed
+  ignore_errors: true
+
 - name: Common dependencies
   apt:
     name:

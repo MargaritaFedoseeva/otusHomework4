@@ -1,0 +1,27 @@
+---
+- name: Add Jenkins Helm repository
+  command: helm repo add jenkinsci https://charts.jenkins.io
+  become: false
+  register: helm_repo_add
+  changed_when: helm_repo_add.rc == 0
+  failed_when: helm_repo_add.rc != 0 and 'already exists' not in helm_repo_add.stderr
+
+- name: Update Helm repos
+  command: helm repo update
+  become: false
+
+- name: Copy values.yaml to remote
+  template:
+    src: "{{ role_path }}/values.yaml"
+    dest: /tmp/jenkins-values.yaml
+
+- name: Install Jenkins chart
+  kubernetes.core.helm:
+    name: jenkins
+    release_namespace: "{{ jenkins_namespace }}"
+    chart_ref: jenkinsci/jenkins
+    create_namespace: true
+    kubeconfig: /home/margo/.kube/config
+    values_files:
+      - /tmp/jenkins-values.yaml
+  become: false

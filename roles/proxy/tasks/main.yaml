@@ -7,6 +7,6 @@
       HTTPS_PROXY={{ proxy_url }}
       http_proxy={{ proxy_url }}
       https_proxy={{ proxy_url }}
-      NO_PROXY=localhost,127.0.0.1,192.168.49.0/24
-      no_proxy=localhost,127.0.0.1,192.168.49.0/24
+      NO_PROXY={{ no_proxy }}
+      no_proxy={{ no_proxy }}
     create: true

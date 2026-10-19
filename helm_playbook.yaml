@@ -13,7 +13,12 @@
     - role: docker
     - role: kubectl
     - role: minikube
+      tags: minikube
     - role: moon
       tags: moon
     - role: wiremock
       tags: wiremock
+    - role: android_emulator
+      tags: emulator
+    - role: jenkins
+      tags: jenkins

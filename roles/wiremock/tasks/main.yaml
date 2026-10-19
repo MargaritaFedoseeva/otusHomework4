@@ -42,6 +42,7 @@
     release_namespace: "{{ wiremock_namespace }}"
     create_namespace: true
     wait: true
+    wait_timeout: 10m
     values:
       replicaCount: 1
       ingress:
@@ -54,9 +55,28 @@
       args:
         - "--port=9021"
         - "--root-dir=/home/wiremock/storage"
-        - "--global-response-templating"
       mappings: "{{ wiremock_stubs }}"
   environment:
     HTTPS_PROXY: "{{ proxy_url }}"
     HTTP_PROXY: "{{ proxy_url }}"
     NO_PROXY: "localhost,127.0.0.1,192.168.49.0/24"
+
+- name: Wait for WireMock pod to be ready
+  command: kubectl wait --namespace {{ wiremock_namespace }} --for=condition=ready pod --selector=app.kubernetes.io/name=wiremock --timeout=120s
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  become: false
+
+- name: Copy APK to remote host
+  copy:
+    src: "files/wishlist-349317-bdec0c.apk"
+    dest: "/tmp/wishlist-349317-bdec0c.apk"
+
+- name: Copy APK to WireMock __files directory
+  shell: |
+    kubectl cp /tmp/wishlist-349317-bdec0c.apk \
+      wiremock-ns/$(kubectl get pod -n wiremock-ns -l app.kubernetes.io/name=wiremock -o jsonpath='{.items[0].metadata.name}'):/home/wiremock/storage/__files/wishlist-349317-bdec0c.apk
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  become: true
+  become_user: "{{ ansible_facts['env']['SUDO_USER'] }}"

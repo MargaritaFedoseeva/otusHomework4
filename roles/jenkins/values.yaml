@@ -1,0 +1,48 @@
+controller:
+  image:
+    tag: "2.568.1-jdk21"
+  serviceType: ClusterIP
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostName: jenkins.local
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+  JCasC:
+    configScripts:
+      kubernetes-cloud: '''
+        jenkins:
+          clouds:
+            - kubernetes:
+                name: kubernetes
+                serverUrl: https://kubernetes.default.svc
+                namespace: jenkins-ns
+                jenkinsUrl: http://jenkins.jenkins-ns.svc.cluster.local:8080
+                jenkinsTunnel: jenkins-agent.jenkins-ns.svc.cluster.local:50000
+                templates:
+                  - name: java-agent
+                    namespace: jenkins-ns
+                    label: java
+                    containers:
+                      - name: jnlp
+                        image: jenkins/inbound-agent:latest-jdk21
+                      - name: maven
+                        image: maven:3.9-eclipse-temurin-21
+                        command: sleep
+                        args: "99d"
+                        resourceRequestCpu: "500m"
+                        resourceRequestMemory: "512Mi"
+                        resourceLimitCpu: "1"
+                        resourceLimitMemory: "1Gi"
+        '''
+  # Плагины устанавливаются автоматически при старте Jenkins.
+  # ansicolor — для поддержки ansiColor('xterm') в options {} блоке Jenkinsfile.
+  # junit — для публикации результатов тестов через junit() в post {} блоке.
+  installPlugins:
+    - ansicolor:latest
+    - junit:latest
+    - allure-jenkins-plugin:latest
+
+persistence:
+  enabled: true
+  size: 5Gi

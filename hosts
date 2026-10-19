@@ -1,2 +1,2 @@
 [home_lab]
-192.168.0.77
+192.168.0.137 ansible_become_method=sudo ansible_become=true

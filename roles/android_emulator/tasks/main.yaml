@@ -1,0 +1,113 @@
+---
+
+- name: Create Android namespace
+  kubernetes.core.k8s:
+    name: "{{ android_namespace }}"
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig_path }}"
+
+- name: Deploy Android emulator
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: "{{ item.name }}"
+        namespace: "{{ android_namespace }}"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "{{ item.name }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ item.name }}"
+          spec:
+            containers:
+              - name: "{{ item.name }}"
+                image: "{{ item.image }}"
+                env:
+                  - name: WEB_VNC
+                    value: "true"
+                  - name: APPIUM
+                    value: "true"
+                  - name: EMULATOR_DEVICE
+                    value: "Nexus One"
+                  - name: EMULATOR_ARGS
+                    value: "-no-audio -no-boot-anim -gpu swiftshader_indirect"
+                ports:
+                  - containerPort: 6080
+                  - containerPort: 4723
+                resources:
+                  requests:
+                    cpu: "{{ item.cpu_request | default('1') }}"
+                    memory: "{{ item.memory_request | default('2Gi') }}"
+                  limits:
+                    cpu: "{{ item.cpu_limit | default('2') }}"
+                    memory: "{{ item.memory_limit | default('4Gi') }}"
+                securityContext:
+                  privileged: true
+  loop: "{{ android_containers }}"
+
+- name: Create Android emulator Service
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: "{{ item.name }}"
+        namespace: "{{ android_namespace }}"
+      spec:
+        selector:
+          app: "{{ item.name }}"
+        type: ClusterIP
+        ports:
+          - name: vnc
+            port: 6080
+            targetPort: 6080
+          - name: appium
+            port: 4723
+            targetPort: 4723
+  loop: "{{ android_containers }}"
+
+- name: Create Android emulator Ingress
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubeconfig_path }}"
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: "{{ item.name }}"
+        namespace: "{{ android_namespace }}"
+        annotations:
+          nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+          nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+          nginx.ingress.kubernetes.io/websocket-services: "{{ item.name }}"
+          nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+      spec:
+        rules:
+          - host: "{{ item.name }}.local"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: "{{ item.name }}"
+                      port:
+                        number: 6080
+          - host: "{{ item.name }}-appium.local"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: "{{ item.name }}"
+                      port:
+                        number: 4723
+  loop: "{{ android_containers }}"

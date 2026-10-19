@@ -1,7 +1,7 @@
 ---
 
 - name: Add Docker GPG key
-  shell: curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
   args:
     creates: /usr/share/keyrings/docker-archive-keyring.gpg
 
@@ -9,7 +9,7 @@
   ansible.builtin.deb822_repository:
     name: docker
     types: deb
-    uris: https://download.docker.com/linux/debian
+    uris: https://download.docker.com/linux/ubuntu
     suites: "{{ ansible_distribution_release }}"
     components: stable
     architectures: [amd64, arm64, armhf]

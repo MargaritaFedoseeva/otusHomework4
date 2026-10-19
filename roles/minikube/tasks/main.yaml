@@ -1,23 +1,79 @@
 ---
 
+- name: Include proxy vars
+  include_vars: "{{ playbook_dir }}/roles/proxy/vars/main.yaml"
+
 - name: Download Minikube binary
   get_url:
     url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
     dest: /usr/local/bin/minikube
     mode: '0755'
 
+- name: Delete existing Minikube cluster
+  command: minikube delete
+  become: true
+  become_user: "{{ ansible_facts['env']['SUDO_USER'] }}"
+  ignore_errors: true
+
 - name: Start Minikube cluster
-  command: minikube start --driver=docker --ports=80:80 --ports=443:443
-  become: false
+  command: >-
+    minikube start --driver=docker --ports=80:80 --ports=443:443
+    --memory=6144
+    --cpus=5
+    --docker-env HTTP_PROXY={{ proxy_url }}
+    --docker-env HTTPS_PROXY={{ proxy_url }}
+    --docker-env NO_PROXY={{ no_proxy }}
+  become: true
+  become_user: "{{ ansible_facts['env']['SUDO_USER'] }}"
+  environment:
+    HTTP_PROXY: "{{ proxy_url }}"
+    HTTPS_PROXY: "{{ proxy_url }}"
+    NO_PROXY: "{{ no_proxy }}"
   register: minikube_start
   changed_when: minikube_start.rc == 0
 
 - name: Enable ingress addon
   command: minikube addons enable ingress
-  become: false
+  become: true
+  become_user: "{{ ansible_facts['env']['SUDO_USER'] }}"
+  environment:
+    HTTP_PROXY: "{{ proxy_url }}"
+    HTTPS_PROXY: "{{ proxy_url }}"
+    NO_PROXY: "{{ no_proxy }}"
   register: minikube_ingress
   changed_when: minikube_ingress.rc == 0
+  ignore_errors: true
 
 - name: Wait for ingress-nginx controller to be ready
-  command: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
-  become: false
+  command: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=300s
+  become: true
+  become_user: "{{ ansible_facts['env']['SUDO_USER'] }}"
+  retries: 5
+  delay: 30
+  register: ingress_wait
+  until: ingress_wait.rc == 0
+  ignore_errors: true
+
+- name: Create minikube systemd service
+  copy:
+    dest: /etc/systemd/system/minikube.service
+    content: |
+      [Unit]
+      Description=Minikube
+      After=docker.service
+      Requires=docker.service
+
+      [Service]
+      User={{ ansible_facts['env']['SUDO_USER'] }}
+      ExecStart=/usr/local/bin/minikube start --driver=docker --ports=80:80 --ports=443:443 --memory=6144 --cpus=5
+      ExecStop=/usr/local/bin/minikube stop
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable and start minikube service
+  systemd:
+    name: minikube
+    enabled: true
+    daemon_reload: true
